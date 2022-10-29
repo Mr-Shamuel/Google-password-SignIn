@@ -1,7 +1,7 @@
 
 import './App.css';
 import app from './firebase.init';
-import { createUserWithEmailAndPassword, getAuth, GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup, signOut } from "firebase/auth"
+import { createUserWithEmailAndPassword, getAuth, GoogleAuthProvider, sendEmailVerification, sendPasswordResetEmail, signInWithEmailAndPassword, signInWithPopup, signOut, updateProfile } from "firebase/auth"
 import { useState } from 'react';
 const auth = getAuth(app);
 
@@ -10,7 +10,10 @@ function App() {
   const [error, setError] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [registered, setRegistered] = useState(false)
+  const [registered, setRegistered] = useState(false);
+  const [name, setName] = useState('');
+
+
 
   //email email sign in
   const handleSubmit = (e) => {
@@ -19,7 +22,7 @@ function App() {
         .then((userCredential) => {
           // Signed in 
           const user = userCredential.user;
-          console.log(user);
+          setInfo(user);
 
         })
         .catch((error) => {
@@ -28,10 +31,12 @@ function App() {
         });
 
     } else {
+      //creating user 
 
       createUserWithEmailAndPassword(auth, email, password)
         .then(result => {
           const user = result.user;
+          console.log(user);
           // showing success message 
           setInfo(user);
           setError('');
@@ -39,6 +44,11 @@ function App() {
           //clear input fields 
           setEmail('');
           setPassword('');
+          //verification message
+          verificationMail();
+
+          //update user
+          updateUser();
         })
         .catch(err => {
           // showing error message 
@@ -48,10 +58,6 @@ function App() {
         })
 
     }
-
-
-
-
     e.preventDefault();
 
   }
@@ -60,6 +66,38 @@ function App() {
   }
   const handlePasswordBlur = (e) => {
     setPassword(e.target.value)
+  }
+
+  const handleNameBlur = (e) => {
+    setName(e.target.value)
+  }
+
+  //update profile
+
+  const updateUser = () => {
+    updateProfile(auth.currentUser, {
+      displayName: name
+    })
+      .then(() => {
+        console.log("updating name");
+      })
+  }
+
+  //send user verification email
+  const verificationMail = () => {
+    sendEmailVerification(auth.currentUser)
+      .then(() => {
+        alert("Verification email sent")
+      })
+  }
+
+  //reset Password 
+  const handleResetPassword = () => {
+    sendPasswordResetEmail(auth, email)
+      .then(() => {
+        alert("Password reset mail send")
+      })
+
   }
 
 
@@ -77,6 +115,8 @@ function App() {
     signInWithPopup(auth, provider)
       .then(result => {
         setInfo(result.user)
+        //verificationMail
+        verificationMail();
       })
       .catch(err => {
         console.error(err);
@@ -108,12 +148,19 @@ function App() {
 
 
       <form onSubmit={handleSubmit}>
+        {
+          !registered && <input onBlur={handleNameBlur} type="text" placeholder='Enter Your Name' required />
+        }
+        <br />
         <input onBlur={handleEmailBlur} type="text" placeholder='Enter email..' required /> <br />
 
         <input onBlur={handlePasswordBlur} type="password" placeholder='Enter email..' />
         <br />
         <input type="checkbox" onChange={handleRegisterCheck}></input> <label >{registered ? "Don't have account?" : 'Already Register?'}</label>
         <br />
+
+        <p style={{ color: 'blue', textDecoration: 'underline', cursor: 'pointer' }} className='forget' onClick={handleResetPassword}  >Forget password?</p>
+
         <button type='submit'>{registered ? 'Login' : "Register"}</button>
       </form>
 
